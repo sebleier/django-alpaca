@@ -12,13 +12,30 @@ Alpaca gives you the option to override the data completely like how django
 does it now or queries the database for an existing object and skips over it
 if it already exists. In addition, Alpaca also gives you control on the
 behavior when the migration is run backwards.  The default behavior is to
-do nothing, but you can specifiy the migration to delete the object.
+delete the object.
 
 
 .. _South: http://http://south.aeracode.org/
 
+Example
+-------
+
+Here is an example fixture migration::
+
+    import datetime
+    import os
+    from south.db import db
+    from alpaca.migration import FixtureMigration
+
+
+    class Migration(FixtureMigration):
+        fixtures = ['categories.json']
+        defer = True
+        remove_on_backwards = True
+
+Done.
+
 TODOs:
 ------
 
-* Multidb support
-* Rubust testing
+* Testing
