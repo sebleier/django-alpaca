@@ -28,7 +28,7 @@ from django.db import transaction
 from django.utils.importlib import import_module
 
 from alpaca.loaders import PoliteLoader
-from alpaca.removers import NullRemover
+from alpaca.removers import OverwriteRemover
 
 from south.v2 import DataMigration
 
@@ -48,8 +48,8 @@ def _get_frozen_model(model_identifier):
 
 class FixtureMigration(DataMigration):
     fixtures = None
-    loader = PoliteLoader
-    remover = NullRemover
+    loader = DeferLoader
+    remover = OverwriteRemover
 
     def __init__(self, *args, **kwargs):
         if self.fixtures is None:
