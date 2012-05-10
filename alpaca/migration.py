@@ -107,29 +107,32 @@ class FixtureMigration(DataMigration):
             return None
         return path
 
+    def load_fixture(self, fixture):
+        parts = fixture.split('.')
+        if len(parts) == 1:
+            fixture_name = parts[0]
+            formats = serializers.get_public_serializer_formats()
+        else:
+            fixture_name, format = '.'.join(parts[:-1]), parts[-1]
+            if format in serializers.get_public_serializer_formats():
+                formats = [format]
+            else:
+                formats = []
+        if not formats:
+            raise Exception("Problem installing fixture '%s': %s is not a known serialization format.\n" %
+                (fixture_name, format))
+        full_path = self.get_fixture_path(fixture)
+        try:
+            data = open(full_path, 'r')
+            return serializers.deserialize(format, data)
+        finally:
+            fixture.close()
+
     def gather_objects(self):
         """Loads and returns all objects found within the fixtures."""
         objects = []
         for fixture_label in self.fixtures:
-            parts = fixture_label.split('.')
-            if len(parts) == 1:
-                fixture_name = parts[0]
-                formats = serializers.get_public_serializer_formats()
-            else:
-                fixture_name, format = '.'.join(parts[:-1]), parts[-1]
-                if format in serializers.get_public_serializer_formats():
-                    formats = [format]
-                else:
-                    formats = []
-            if not formats:
-                raise Exception("Problem installing fixture '%s': %s is not a known serialization format.\n" %
-                    (fixture_name, format))
-            full_path = self.get_fixture_path(fixture_label)
-            try:
-                fixture = open(full_path, 'r')
-                objects.extend(serializers.deserialize(format, fixture))
-            finally:
-                fixture.close()
+            objects.extend(self.load_fixture(fixture))
         return objects
 
     def monkey_patch(self):
