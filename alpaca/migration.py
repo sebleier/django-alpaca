@@ -27,9 +27,6 @@ from django.core.serializers.python import _get_model
 from django.db import transaction
 from django.utils.importlib import import_module
 
-from alpaca.loaders import PoliteLoader
-from alpaca.removers import OverwriteRemover
-
 from south.v2 import DataMigration
 
 
@@ -48,22 +45,34 @@ def _get_frozen_model(model_identifier):
 
 class FixtureMigration(DataMigration):
     fixtures = None
-    loader = DeferLoader
-    remover = OverwriteRemover
+    defer = False
+    remove_on_backwards = True
 
     def __init__(self, *args, **kwargs):
         if self.fixtures is None:
             raise ValidationError('Must specify at least one fixture to load.')
         self.import_cache = {}
-        self.loader_instance = self.loader()
-        self.remover_instance = self.remover()
-        return super(FixtureMigration, self).__init__(*args, **kwargs)
+        super(FixtureMigration, self).__init__(*args, **kwargs)
 
     def save_obj(self, obj):
-        self.loader_instance.save_obj(obj)
+        if self.defer:
+            pk = obj.object.pk
+            model = type(obj.object)
+            try:
+                model.objects.get(pk=pk)
+            except model.DoesNotExist:
+                obj.save()
+        else:
+            obj.save()
 
     def remove_obj(self, obj):
-        self.remover_instance.remove_obj(obj)
+        if self.remove_on_backwards:
+            pk = obj.object.pk
+            Model = type(obj.object)
+            try:
+                Model.objects.get(pk=pk).delete()
+            except Model.DoesNotExist:
+                pass
 
     def get_fixture_path(self, fixture):
         """
