@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ValidationError
 from django.core.serializers import base
-from django.core.serializers.python import _get_model
+from django.core.serializers import python
 from django.db import transaction
 from django.utils.importlib import import_module
 
@@ -137,12 +137,12 @@ class FixtureMigration(DataMigration):
 
     def monkey_patch(self):
         """Monkey patch _get_model.  Oops, God just killed a kitten"""
-        self.old_get_model = _get_model
-        _get_model = _get_frozen_model
-        _get_model.orm = self.orm
+        self.old_get_model = python._get_model
+        python._get_model = _get_frozen_model
+        python._get_model.orm = self.orm
 
     def unmonkey_patch(self):
-        _get_model = self.old_get_model
+        python._get_model = self.old_get_model
 
     def process(self, action):
         transaction.commit_unless_managed()
